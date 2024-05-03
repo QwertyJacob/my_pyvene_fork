@@ -1332,11 +1332,11 @@ class IntervenableModel(nn.Module):
         intervene on our base example.
 
         Parameters:
-        base:                The base example.
-        sources:             A list of source examples.
-        unit_locations:      The intervention locations.
-        activations_sources: A list of representations.
-        subspace:            Subspace interventions.
+        base:                   The base example.
+        sources:                A list of source examples.
+        unit_locations:         The intervention locations.
+        source_representations: A list of representations.
+        subspaces:              Subspace interventions.
 
         Return:
         base_output: the non-intervened output of the base
