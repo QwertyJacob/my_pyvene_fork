@@ -19,6 +19,8 @@ llama_type_to_module_mapping = {
     "mlp_activation": ("layers[%s].mlp.act_fn", CONST_OUTPUT_HOOK),
     "mlp_output": ("layers[%s].mlp", CONST_OUTPUT_HOOK),
     "mlp_input": ("layers[%s].mlp", CONST_INPUT_HOOK),
+    "mlp_gate_output": ("layers[%s].mlp.gate_proj", CONST_OUTPUT_HOOK),
+    "mlp_up_output": ("layers[%s].mlp.up_proj", CONST_OUTPUT_HOOK),
     "attention_value_output": ("layers[%s].self_attn.o_proj", CONST_INPUT_HOOK),
     "head_attention_value_output": ("layers[%s].self_attn.o_proj", CONST_INPUT_HOOK),
     "attention_output": ("layers[%s].self_attn", CONST_OUTPUT_HOOK),
