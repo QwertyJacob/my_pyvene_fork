@@ -40,6 +40,8 @@ llama_type_to_dimension_mapping = {
     "mlp_activation": ("intermediate_size",),
     "mlp_output": ("hidden_size",),
     "mlp_input": ("hidden_size",),
+    "mlp_gate_output": ("intermediate_size",),
+    "mlp_up_output": ("intermediate_size",),
     "attention_value_output": ("hidden_size",),
     "head_attention_value_output": ("hidden_size/num_attention_heads",),
     "attention_output": ("hidden_size",),
