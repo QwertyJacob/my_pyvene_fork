@@ -174,7 +174,27 @@ class CollectIntervention(ConstantSourceIntervention):
     def __str__(self):
         return f"CollectIntervention()"
         
+class CollectInterventionKLD(ConstantSourceIntervention):
+
+    """Collect activations."""
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs, keep_last_dim=True)
         
+    def forward(self, base, source=None, subspaces=None):
+        return _do_intervention_by_swap(
+            base,
+            source,
+            "collect",
+            self.interchange_dim,
+            subspaces,
+            subspace_partition=self.subspace_partition,
+            use_fast=self.use_fast,
+        )
+
+    def __str__(self):
+        return f"CollectIntervention()"
+
 class SkipIntervention(BasisAgnosticIntervention, LocalistRepresentationIntervention):
 
     """Skip the current intervening layer's computation in the hook function."""
