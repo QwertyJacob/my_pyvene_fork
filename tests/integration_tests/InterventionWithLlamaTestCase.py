@@ -2,26 +2,25 @@ import unittest
 from ..utils import *
 
 
-class InterventionWithGPT2TestCase(unittest.TestCase):
+class InterventionWithLlamaTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(self):
-        print("=== Test Suite: InterventionWithGPT2TestCase ===")
-        self.config, self.tokenizer, self.gpt2 = create_gpt2_lm(
-            config=GPT2Config(
-                n_embd=24,
-                attn_pdrop=0.0,
-                embd_pdrop=0.0,
-                resid_pdrop=0.0,
-                summary_first_dropout=0.0,
-                n_layer=4,
-                bos_token_id=0,
-                eos_token_id=0,
-                n_positions=1024,
-                vocab_size=10,
+        print("=== Test Suite: InterventionWithLlamaTestCase ===")
+        self.config, self.tokenizer, self.llama = create_llama(
+            config=LlamaConfig(
+                bos_token_id=1,
+                eos_token_id=2,
+                intermediate_size=11008,
+                max_position_embeddings=1024,
+                num_attention_heads=32,
+                num_hidden_layers=4,
+                num_key_value_heads=32,
+                hidden_size=4096,
+                rms_norm_eps=1e-5,
             )
         )
         self.vanilla_block_output_config = IntervenableConfig(
-            model_type=type(self.gpt2),
+            model_type=type(self.llama),
             representations=[
                 RepresentationConfig(
                     0,
@@ -33,7 +32,7 @@ class InterventionWithGPT2TestCase(unittest.TestCase):
             intervention_types=VanillaIntervention,
         )
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.gpt2 = self.gpt2.to(self.device)
+        self.llama = self.llama.to(self.device)
 
         self.nonhead_streams = [
             "block_output",
@@ -77,7 +76,7 @@ class InterventionWithGPT2TestCase(unittest.TestCase):
         }
 
         config = IntervenableConfig(
-            model_type=type(self.gpt2),
+            model_type=type(self.llama),
             representations=[
                 RepresentationConfig(
                     intervention_layer,
@@ -88,13 +87,13 @@ class InterventionWithGPT2TestCase(unittest.TestCase):
             ],
             intervention_types=intervention_type,
         )
-        intervenable = IntervenableModel(config, self.gpt2)
+        intervenable = IntervenableModel(config, self.llama)
         intervention = list(intervenable.interventions.values())[0][0]
 
         base_activations = {}
         source_activations = {}
-        _ = GPT2_RUN(self.gpt2, base["input_ids"], base_activations, {})
-        _ = GPT2_RUN(self.gpt2, source["input_ids"], source_activations, {})
+        _ = Llama_RUN(self.llama, base["input_ids"], base_activations, {})
+        _ = Llama_RUN(self.llama, source["input_ids"], source_activations, {})
         _key = f"{intervention_layer}.{intervention_stream}"
         if isinstance(heads[0], list):
             for i, head in enumerate(heads):
@@ -111,8 +110,8 @@ class InterventionWithGPT2TestCase(unittest.TestCase):
                         base_activations[_key][:, head, position],
                         source_activations[_key][:, head, position],
                     )
-        golden_out = GPT2_RUN(
-            self.gpt2, base["input_ids"], {}, {_key: base_activations[_key]}
+        golden_out = Llama_RUN(
+            self.llama, base["input_ids"], {}, {_key: base_activations[_key]}
         )
 
         if isinstance(positions[0], list):
@@ -132,9 +131,8 @@ class InterventionWithGPT2TestCase(unittest.TestCase):
                     )
                 },
             )
-        # Relax the atol to 1e-6 to accommodate for different Transformers versions.
-        # The max of the absolute diff is usually between 1e-8 to 1e-7.
-        self.assertTrue(torch.allclose(out_output[0], golden_out, rtol=1e-05, atol=1e-06))
+
+        self.assertTrue(torch.allclose(out_output[0], golden_out))
 
 
     def test_with_multiple_heads_positions_vanilla_intervention_positive(self):
@@ -162,69 +160,69 @@ class InterventionWithGPT2TestCase(unittest.TestCase):
             
 def suite():
     suite = unittest.TestSuite()
-    suite.addTest(InterventionWithGPT2TestCase("test_clean_run_positive"))
+    suite.addTest(InterventionWithLlamaTestCase("test_clean_run_positive"))
     suite.addTest(
-        InterventionWithGPT2TestCase(
+        InterventionWithLlamaTestCase(
             "test_invalid_unit_negative"
         )
     )
     suite.addTest(
-        InterventionWithGPT2TestCase(
+        InterventionWithLlamaTestCase(
             "test_with_single_position_vanilla_intervention_positive"
         )
     )
     suite.addTest(
-        InterventionWithGPT2TestCase(
+        InterventionWithLlamaTestCase(
             "test_with_multiple_position_vanilla_intervention_positive"
         )
     )
     suite.addTest(
-        InterventionWithGPT2TestCase(
+        InterventionWithLlamaTestCase(
             "test_with_complex_position_vanilla_intervention_positive"
         )
     )
     suite.addTest(
-        InterventionWithGPT2TestCase(
+        InterventionWithLlamaTestCase(
             "test_with_single_head_position_vanilla_intervention_positive"
         )
     )
     suite.addTest(
-        InterventionWithGPT2TestCase(
+        InterventionWithLlamaTestCase(
             "test_with_multiple_heads_positions_vanilla_intervention_positive"
         )
     )
     suite.addTest(
-        InterventionWithGPT2TestCase(
+        InterventionWithLlamaTestCase(
             "test_with_use_fast_vanilla_intervention_positive"
         )
     )
     suite.addTest(
-        InterventionWithGPT2TestCase(
+        InterventionWithLlamaTestCase(
             "test_with_location_broadcast_vanilla_intervention_positive"
         )
     ) 
     suite.addTest(
-        InterventionWithGPT2TestCase(
+        InterventionWithLlamaTestCase(
             "test_with_position_intervention_constant_source_vanilla_intervention_positive"
         )
     ) 
     suite.addTest(
-        InterventionWithGPT2TestCase(
+        InterventionWithLlamaTestCase(
             "test_with_position_intervention_constant_source_addition_intervention_positive"
         )
     ) 
     suite.addTest(
-        InterventionWithGPT2TestCase(
+        InterventionWithLlamaTestCase(
             "test_with_position_intervention_constant_source_subtraction_intervention_positive"
         )
     )
     suite.addTest(
-        InterventionWithGPT2TestCase(
+        InterventionWithLlamaTestCase(
             "test_with_position_intervention_constant_source_zero_intervention_positive"
         )
     ) 
     suite.addTest(
-        InterventionWithGPT2TestCase(
+        InterventionWithLlamaTestCase(
             "_test_with_long_sequence_position_intervention_constant_source_positive"
         )
     ) 

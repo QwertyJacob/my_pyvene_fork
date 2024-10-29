@@ -10,10 +10,11 @@ defined in the huggingface library.
 
 
 import torch
+from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
 from ..constants import *
 
 
-gemma_type_to_module_mapping = {
+olmo_type_to_module_mapping = {
     "block_input": ("layers[%s]", CONST_INPUT_HOOK),
     "block_output": ("layers[%s]", CONST_OUTPUT_HOOK),
     "mlp_activation": ("layers[%s].mlp.act_fn", CONST_OUTPUT_HOOK),
@@ -32,7 +33,7 @@ gemma_type_to_module_mapping = {
 }
 
 
-gemma_type_to_dimension_mapping = {
+olmo_type_to_dimension_mapping = {
     "n_head": ("num_attention_heads",),
     "n_kv_head": ("num_key_value_heads",),
     "block_input": ("hidden_size",),
@@ -41,49 +42,52 @@ gemma_type_to_dimension_mapping = {
     "mlp_output": ("hidden_size",),
     "mlp_input": ("hidden_size",),
     "attention_value_output": ("hidden_size",),
-    "head_attention_value_output": ("head_dim",),
+    "head_attention_value_output": ("hidden_size/num_attention_heads",),
     "attention_output": ("hidden_size",),
     "attention_input": ("hidden_size",),
     "query_output": ("hidden_size",),
     "key_output": ("hidden_size",),
     "value_output": ("hidden_size",),
-    "head_query_output": ("head_dim",),
-    "head_key_output": ("head_dim",),
-    "head_value_output": ("hhead_dim",),
+    "head_query_output": ("hidden_size/num_attention_heads",),
+    "head_key_output": ("hidden_size/num_attention_heads",),
+    "head_value_output": ("hidden_size/num_attention_heads",),
 }
 
 
-"""gemma model with LM head"""
-gemma_lm_type_to_module_mapping = {}
-for k, v in gemma_type_to_module_mapping.items():
-    gemma_lm_type_to_module_mapping[k] = (f"model.{v[0]}", ) + v[1:]
+"""olmo model with LM head"""
+olmo_lm_type_to_module_mapping = {}
+for k, v in olmo_type_to_module_mapping.items():
+    olmo_lm_type_to_module_mapping[k] = (f"model.{v[0]}", ) + v[1:]
 
 
-gemma_lm_type_to_dimension_mapping = gemma_type_to_dimension_mapping
+olmo_lm_type_to_dimension_mapping = olmo_type_to_dimension_mapping
 
 
-"""gemma model with classifier head"""
-gemma_classifier_type_to_module_mapping = {}
-for k, v in gemma_type_to_module_mapping.items():
-    gemma_classifier_type_to_module_mapping[k] = (f"model.{v[0]}", ) + v[1:]
+"""olmo model with classifier head"""
+olmo_classifier_type_to_module_mapping = {}
+for k, v in olmo_type_to_module_mapping.items():
+    olmo_classifier_type_to_module_mapping[k] = (f"model.{v[0]}", ) + v[1:]
 
 
-gemma_classifier_type_to_dimension_mapping = gemma_type_to_dimension_mapping
+olmo_classifier_type_to_dimension_mapping = olmo_type_to_dimension_mapping
 
 
-def create_gemma(
-    name="google/gemma-2b-it", cache_dir=None, dtype=torch.bfloat16
+def create_olmo(
+    name="allenai/OLMo-7B-0424-hf", cache_dir=None, dtype=torch.bfloat16, config=None,
+    revision='main'
 ):
-    """Creates a Gemma Causal LM model, config, and tokenizer from the given name and revision"""
-    from transformers import GemmaForCausalLM, GemmaTokenizer, GemmaConfig
-
-    config = GemmaConfig.from_pretrained(name, cache_dir=cache_dir)
-    tokenizer = GemmaTokenizer.from_pretrained(name, cache_dir=cache_dir)
-    gemma = GemmaForCausalLM.from_pretrained(
-        name,
-        config=config,
-        cache_dir=cache_dir,
-        torch_dtype=dtype,  # save memory
-    )
+    """Creates a OLMo Causal LM model, config, and tokenizer from the given name and revision"""
+    if config is None:
+        config = AutoConfig.from_pretrained(name, cache_dir=cache_dir)
+        olmo = AutoModelForCausalLM.from_pretrained(
+            name,
+            config=config,
+            cache_dir=cache_dir,
+            torch_dtype=dtype,
+        )
+        tokenizer = AutoTokenizer.from_pretrained(name, cache_dir=cache_dir)
+    else:
+        olmo = AutoModelForCausalLM(config, cache_dir=cache_dir, revision=revision)
+        tokenizer = AutoTokenizer.from_pretrained(name, cache_dir=cache_dir)
     print("loaded model")
-    return config, tokenizer, gemma
+    return config, tokenizer, olmo
